@@ -1,16 +1,34 @@
-# tugaskelompok5
+# 🌟 Aplikasi Flutter 3 Halaman - Kelompok 5 🌟
 
-A new Flutter project.
+## 👥 Anggota Kelompok
+| Nama                  | NPM        |
+|-----------------------|------------|
+| Agil Deriansyah Hasan | 4522210125 |
+| Arsya Yan Duribta     | 4522210117 |
 
-## Getting Started
+---
 
-This project is a starting point for a Flutter application.
+## 🌐 Deskripsi Aplikasi
 
-A few resources to get you started if this is your first Flutter project:
+Aplikasi ini berisi 3 halaman, yaitu:
+1. Counter sederhana.
+2. Menampilkan data dari API.
+3. Profil anggota kelompok.
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+## 📸 Hasil Screenshot
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+### Halaman Counter
+![Counter](screenshot/counter.png)
+
+### Halaman Profile
+![Profile](screenshot/profile.png)
+
+## Penjelasan Tiap Halaman:
+- **Halaman Counter:** ...
+- **Halaman API:** ...
+- **Halaman Profil:** ...
+
+
+## Cara Menjalankan Aplikasi:
+
+flutter pub get flutter run

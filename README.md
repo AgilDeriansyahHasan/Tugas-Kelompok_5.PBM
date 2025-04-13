@@ -20,6 +20,9 @@ Aplikasi ini berisi 3 halaman, yaitu:
 ### Halaman Counter
 ![Counter](screenshot/counter.png)
 
+### Halaman Counter
+![Counter](screenshot/universitas.png)
+
 ### Halaman Profile
 ![Profile](screenshot/profile.png)
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'pages/halaman_utama.dart';
+import 'pages/halaman_universitas.dart';
 import 'pages/halaman_profile.dart';
 
 void main() => runApp(const MyApp());
@@ -10,7 +11,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Aplikasi Minimalis',
+      title: 'Flutter 3 Hal - Kelompok 5',
       theme: ThemeData(
         scaffoldBackgroundColor: Colors.grey[100],
         textTheme: const TextTheme(
@@ -35,11 +36,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
   final List<Widget> _pages = [
     HalamanUtama(),
+    HalamanUniversitas(),
     HalamanProfile(),
   ];
 
   final List<String> _titles = [
     'Beranda',
+    'Daftar Universitas di Indonesia',
     'Profile',
   ];
 
@@ -76,6 +79,7 @@ class _HomeScreenState extends State<HomeScreen> {
             onTap: (index) => setState(() => _currentIndex = index),
             items: const [
               BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Utama'),
+              BottomNavigationBarItem(icon: Icon(Icons.auto_stories), label: 'Universitas'),
               BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
             ],
           ),

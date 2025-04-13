@@ -28,7 +28,9 @@ Aplikasi ini berisi 3 halaman, yaitu:
 
 ## Penjelasan Tiap Halaman:
 - **Halaman Counter:** ...
-- **Halaman API:** ...
+  
+- **Halaman API:** `HalamanUniversitas` adalah halaman Flutter yang menampilkan daftar universitas di Indonesia dengan mengambil data dari API universities.hipolabs.com. Saat halaman pertama kali dimuat, metode `initState` akan langsung memanggil fungsi `fetchUniversitas`, yang bertugas melakukan HTTP GET request ke endpoint API. Selama proses pengambilan data berlangsung, halaman akan menampilkan `CircularProgressIndicator` di tengah layar untuk menunjukkan bahwa data sedang dimuat. Setelah response berhasil diterima dengan status 200, data JSON yang diterima akan di-decode menjadi list, kemudian diurutkan berdasarkan nama universitas secara alfabetis. Setelah proses sorting selesai, `setState` dipanggil untuk memperbarui tampilan dengan data universitas yang sudah diproses. Data kemudian ditampilkan menggunakan ListView.builder, di mana setiap universitas dirender dalam sebuah `Container` berwarna putih. Di dalam masing-masing Container, nama universitas ditampilkan dengan teks tebal, dan alamat website universitas (jika tersedia) ditampilkan dalam teks berwarna biru.
+  
 - **Halaman Profil:** ...
 
 

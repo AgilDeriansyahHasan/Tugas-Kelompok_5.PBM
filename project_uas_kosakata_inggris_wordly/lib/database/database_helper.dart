@@ -1,87 +1,141 @@
-import 'package:sqflite/sqflite.dart';
+// database/database_helper.dart
+
+import 'dart:io';
 import 'package:path/path.dart';
-import '../model/habit.dart'; // Pastikan path ini sesuai dengan struktur folder kamu
+import 'package:sqflite/sqflite.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+
+import '../models/user.dart';
+import '../models/word.dart';
 
 class DatabaseHelper {
-  static final DatabaseHelper instance = DatabaseHelper._internal();
+  // Nama database.
+  static const _databaseName = "vocabulary_app.db";
+  // Versi database, untuk keperluan migrasi.
+  static const _databaseVersion = 1;
+
+  // Membuat instance tunggal (singleton) dari DatabaseHelper.
+  DatabaseHelper._privateConstructor();
+  static final DatabaseHelper instance = DatabaseHelper._privateConstructor();
+
+  // Variabel untuk menyimpan instance database.
   static Database? _database;
 
-  DatabaseHelper._internal();
-
-  Future<Database> get database async {
-    return _database ??= await _initDatabase();
+  Future<void> initialize() async {
+    if (kIsWeb) {
+      // Jika platform adalah web, gunakan factory untuk web.
+      databaseFactory = databaseFactoryFfiWeb;
+    } else if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+      // Jika platform adalah desktop, inisialisasi FFI dan gunakan factory FFI.
+      sqfliteFfiInit();
+      databaseFactory = databaseFactoryFfi;
+    }
+    // Untuk Android/iOS, tidak perlu melakukan apa-apa, karena sqflite standar akan digunakan.
   }
 
-  Future<Database> _initDatabase() async {
-    final dbPath = await getDatabasesPath();
-    final path = join(dbPath, 'habit_database.db');
+  /// Getter untuk database.
+  /// Jika `_database` belum diinisialisasi, panggil `_initDatabase`.
+  Future<Database> get database async {
+    if (_database != null) return _database!;
+    _database = await _initDatabase();
+    return _database!;
+  }
 
+  /// Inisialisasi database.
+  /// Menentukan path dan membuka koneksi ke database.
+  Future<Database> _initDatabase() async {
+    final path = join(await getDatabasesPath(), _databaseName);
     return await openDatabase(
       path,
-      version: 1,
-      onCreate: (Database db, int version) async {
-        await db.execute('''
-          CREATE TABLE habits (
-            id INTEGER PRIMARY KEY,
-            name TEXT NOT NULL,
-            description TEXT,
-            example TEXT,
-            isDone INTEGER NOT NULL DEFAULT 0
-          )
-        ''');
-      },
+      version: _databaseVersion,
+      onCreate: _onCreate, // Fungsi yang akan dijalankan saat database dibuat pertama kali.
     );
   }
 
-  Future<List<Habit>> getAllHabits() async {
-    try {
-      final db = await database;
-      final List<Map<String, dynamic>> maps = await db.query('habits');
+  /// Fungsi `onCreate` untuk membuat tabel-tabel yang dibutuhkan.
+  Future<void> _onCreate(Database db, int version) async {
+    // Perintah SQL untuk membuat tabel 'users'.
+    await db.execute('''
+      CREATE TABLE users (
+        userId INTEGER PRIMARY KEY,
+        name TEXT NOT NULL,
+        email TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL,
+        imagePath TEXT
+      )
+    ''');
 
-      return maps.map((map) => Habit.fromJson(map)).toList();
-    } catch (e) {
-      print('❌ Gagal load habits: $e');
-      return [];
-    }
+    // Perintah SQL untuk membuat tabel 'words' (sebelumnya 'habits').
+    await db.execute('''
+      CREATE TABLE words (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        userId INTEGER NOT NULL,
+        name TEXT NOT NULL,
+        description TEXT,
+        example TEXT,
+        isDone INTEGER NOT NULL DEFAULT 0,
+        FOREIGN KEY (userId) REFERENCES users (userId) ON DELETE CASCADE
+      )
+    ''');
   }
 
-  Future<void> insertHabit(Habit habit) async {
-    try {
-      final db = await database;
-      await db.insert(
-        'habits',
-        habit.toMap(),
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
-    } catch (e) {
-      print('❌ Gagal insert habit: $e');
-    }
+  // --- Operasi CRUD untuk User ---
+
+  /// Memasukkan user baru. `UNIQUE` pada email akan melempar error jika email sudah ada.
+  Future<void> insertUser(User user) async {
+    final db = await database;
+    await db.insert('users', user.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.fail); // Gagal jika email duplikat
   }
 
-  Future<void> updateHabit(Habit habit) async {
-    try {
-      final db = await database;
-      await db.update(
-        'habits',
-        habit.toMap(),
-        where: 'id = ?',
-        whereArgs: [habit.id],
-      );
-    } catch (e) {
-      print('❌ Gagal update habit: $e');
-    }
+  /// Mengambil user berdasarkan email dan password untuk autentikasi.
+  Future<User?> authenticate(String email, String password) async {
+    final db = await database;
+    final maps = await db.query(
+      'users',
+      where: 'email = ? AND password = ?',
+      whereArgs: [email, password],
+    );
+    return maps.isNotEmpty ? User.fromMap(maps.first) : null;
   }
 
-  Future<void> deleteHabit(int id) async {
-    try {
-      final db = await database;
-      await db.delete(
-        'habits',
-        where: 'id = ?',
-        whereArgs: [id],
-      );
-    } catch (e) {
-      print('❌ Gagal delete habit: $e');
-    }
+  /// Mengupdate data user.
+  Future<int> updateUser(User user) async {
+    final db = await database;
+    return await db.update('users', user.toMap(), where: 'userId = ?', whereArgs: [user.userId]);
+  }
+
+  // --- Operasi CRUD untuk Word (Kosakata) ---
+
+  /// Memasukkan kata baru.
+  Future<void> insertWord(Word word) async {
+    final db = await database;
+    await db.insert('words', word.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  /// Mengambil semua kata milik seorang user.
+  Future<List<Word>> getWords(int userId) async {
+    final db = await database;
+    final maps = await db.query(
+      'words',
+      where: 'userId = ?',
+      whereArgs: [userId],
+      orderBy: 'name ASC', // Urutkan berdasarkan abjad.
+    );
+    return maps.map((map) => Word.fromMap(map)).toList();
+  }
+
+  /// Mengupdate data sebuah kata.
+  Future<void> updateWord(Word word) async {
+    final db = await database;
+    await db.update('words', word.toMap(), where: 'id = ?', whereArgs: [word.id]);
+  }
+
+  /// Menghapus sebuah kata berdasarkan ID-nya.
+  Future<void> deleteWord(int id) async {
+    final db = await database;
+    await db.delete('words', where: 'id = ?', whereArgs: [id]);
   }
 }

@@ -1,114 +1,136 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_adaptive_scaffold/flutter_adaptive_scaffold.dart';
 
-import 'pages/kosakata.dart';
-import 'pages/kemajuan.dart';
-import 'pages/tinjau.dart';
-import 'pages/profil.dart';
-import 'pages/test.dart';
+import '../database/database_helper.dart';
+import '../models/user.dart';
+import '../pages/auth.dart';
+import '../pages/homepage.dart';
 
-void main() => runApp(const MyApp());
+// Fungsi main sekarang menjadi async
+Future<void> main() async {
+  // Memastikan semua widget Flutter sudah diinisialisasi sebelum menjalankan aplikasi.
+  WidgetsFlutterBinding.ensureInitialized();
 
+  // Panggil metode inisialisasi database factory sebelum menjalankan aplikasi.
+  // Ini adalah langkah kunci untuk cross-platform.
+  await DatabaseHelper.instance.initialize();
+
+  runApp(const MyApp());
+}
+
+/// Kelas utama aplikasi yang merupakan StatefulWidget.
+/// Ini memungkinkan state aplikasi (seperti tema dan status login) untuk dikelola secara global.
 class MyApp extends StatefulWidget {
-  const MyApp({Key? key}) : super(key: key);
+  const MyApp({super.key});
 
-  static _MyAppState? of(BuildContext context) =>
-      context.findAncestorStateOfType<_MyAppState>();
+  /// Metode statis untuk mengakses state dari `MyApp` (_MyAppState).
+  /// Ini berguna untuk memanggil fungsi seperti `setTheme` atau `setAuthentication`
+  /// dari widget anak mana pun di dalam aplikasi.
+  static _MyAppState of(BuildContext context) =>
+      context.findAncestorStateOfType<_MyAppState>()!;
 
   @override
-  _MyAppState createState() => _MyAppState();
+  State<MyApp> createState() => _MyAppState();
 }
 
 class _MyAppState extends State<MyApp> {
+  // State untuk menyimpan mode tema saat ini (terang, gelap, atau sistem).
   ThemeMode _themeMode = ThemeMode.system;
-  int _selectedIndex = 0;
 
-  static const destinations = <NavigationDestination>[
-    NavigationDestination(icon: Icon(Icons.domain_verification_rounded), label: 'Kosakata'),
-    NavigationDestination(icon: Icon(Icons.person_outline_rounded), label: 'Kemajuan'),
-    NavigationDestination(icon: Icon(Icons.schedule_rounded), label: 'Tinjau'),
-    NavigationDestination(icon: Icon(Icons.person_outline_rounded), label: 'Profil'),
-    NavigationDestination(icon: Icon(Icons.person_outline_rounded), label: 'Test'),
-  ];
+  // State untuk menyimpan informasi pengguna yang sedang login.
+  // Jika null, berarti tidak ada pengguna yang login.
+  User? _currentUser;
 
-  final List<Widget> _pages = const [
-    KosakataPage(),
-    KemajuanPage(),
-    TinjauPage(),
-    ProfilPage(),
-    TestPage(),
-  ];
+  /// Getter untuk memeriksa apakah pengguna sudah terautentikasi.
+  bool get isAuthenticated => _currentUser != null;
 
+  /// Fungsi untuk mengubah tema aplikasi secara global.
+  /// Menerima boolean `isDark` untuk menentukan tema.
   void setTheme(bool isDark) {
     setState(() {
       _themeMode = isDark ? ThemeMode.dark : ThemeMode.light;
     });
   }
 
+  /// Fungsi untuk mengubah status autentikasi pengguna.
+  /// Menerima `isAuthenticated` dan objek `User` (opsional).
+  /// Jika logout, panggil dengan `isAuthenticated = false`.
+  /// Jika login, panggil dengan `isAuthenticated = true` dan teruskan data pengguna.
+  void setAuthentication(bool isAuthenticated, {User? user}) {
+    setState(() {
+      if (isAuthenticated) {
+        _currentUser = user;
+      } else {
+        _currentUser = null;
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Update color scheme configuration
-    final lightColorScheme = ColorScheme.fromSeed(
+    // Skema warna untuk tema terang (light theme).
+    final lightScheme = ColorScheme.fromSeed(
       seedColor: Colors.limeAccent,
       brightness: Brightness.light,
     );
 
-    final darkColorScheme = ColorScheme.fromSeed(
+    // Skema warna untuk tema gelap (dark theme).
+    final darkScheme = ColorScheme.fromSeed(
       seedColor: Colors.limeAccent,
       brightness: Brightness.dark,
     );
 
     return MaterialApp(
-      title: 'Project Tugas Akhir PBM',
+      title: 'Vocabulary Vault',
       debugShowCheckedModeBanner: false,
+
+      // Konfigurasi tema terang
       theme: ThemeData(
         useMaterial3: true,
-        colorScheme: lightColorScheme,
+        colorScheme: lightScheme,
         appBarTheme: AppBarTheme(
-          backgroundColor: lightColorScheme.primaryContainer,
+          backgroundColor: lightScheme.primaryContainer,
           titleTextStyle: TextStyle(
-            color: lightColorScheme.onPrimaryContainer,
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
+            color: lightScheme.onPrimaryContainer,
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        cardTheme: CardThemeData(
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
         ),
       ),
+
+      // Konfigurasi tema gelap
       darkTheme: ThemeData(
         useMaterial3: true,
-        colorScheme: darkColorScheme,
+        colorScheme: darkScheme,
         appBarTheme: AppBarTheme(
-          backgroundColor: darkColorScheme.primaryContainer,
+          backgroundColor: darkScheme.primaryContainer,
           titleTextStyle: TextStyle(
-            color: darkColorScheme.onPrimaryContainer,
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
+            color: darkScheme.onPrimaryContainer,
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        cardTheme: CardThemeData(
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
         ),
       ),
 
       themeMode: _themeMode,
-      home: AdaptiveScaffold(
-        useDrawer: false,
-        destinations: destinations,
-        selectedIndex: _selectedIndex,
-        onSelectedIndexChange: (i) => setState(() => _selectedIndex = i),
 
-        appBar: AppBar(
-          centerTitle: true,
-          elevation: 0,
-          title: Text(destinations[_selectedIndex].label),
-        ),
-        // appBarBreakpoint: const WidthPlatformBreakpoint(begin: 0),
-
-        body: (context) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(child: _pages[_selectedIndex]),
-            ],
-          );
-        },
-      ),
+      // Logika utama untuk navigasi:
+      // Jika pengguna sudah terautentikasi (`_currentUser` tidak null), tampilkan HomePage.
+      // Jika tidak, tampilkan AuthPage untuk login atau register.
+      home: isAuthenticated
+          ? HomePage(user: _currentUser!)
+          : const AuthPage(),
     );
   }
 }

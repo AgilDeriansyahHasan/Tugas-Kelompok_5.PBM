@@ -1,11 +1,8 @@
-// pages/auth.dart
-
 import 'package:flutter/material.dart';
 import '../database/database_helper.dart';
 import '../main.dart';
 import '../models/user.dart';
 
-// Enum untuk menentukan mode halaman: Login atau Register.
 enum AuthMode { login, register }
 
 class AuthPage extends StatefulWidget {
@@ -16,29 +13,19 @@ class AuthPage extends StatefulWidget {
 }
 
 class _AuthPageState extends State<AuthPage> {
-  // Kunci global untuk mengelola state dari Form.
   final _formKey = GlobalKey<FormState>();
-
-  // Mode awal adalah Login.
   AuthMode _mode = AuthMode.login;
 
-  // Controller untuk setiap field input.
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
-  // State untuk loading dan pesan error.
   bool _isLoading = false;
   String? _errorMessage;
 
-  /// Fungsi yang dipanggil saat tombol utama (Login/Register) ditekan.
   Future<void> _submit() async {
-    // Validasi form terlebih dahulu. Jika tidak valid, hentikan proses.
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
 
-    // Ubah state untuk menampilkan indikator loading dan menghapus pesan error lama.
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -48,63 +35,43 @@ class _AuthPageState extends State<AuthPage> {
 
     try {
       if (_mode == AuthMode.register) {
-        // --- LOGIKA REGISTER ---
-        // Buat objek User baru dari data yang diinput.
         final newUser = User(
-          // Gunakan timestamp sebagai ID unik sederhana.
           userId: DateTime.now().millisecondsSinceEpoch,
           name: _nameController.text.trim(),
           email: _emailController.text.trim().toLowerCase(),
           password: _passwordController.text.trim(),
         );
 
-        // Masukkan pengguna baru ke database.
         await db.insertUser(newUser);
 
-        // Tampilkan pesan sukses dan ganti mode ke Login.
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Registration successful! Please login.')),
+          const SnackBar(content: Text('Registration successful! Please login.')),
         );
-        _switchAuthMode(); // Pindah ke halaman login setelah register.
-
+        _switchAuthMode();
       } else {
-        // --- LOGIKA LOGIN ---
-        // Autentikasi pengguna menggunakan email dan password.
         final user = await db.authenticate(
           _emailController.text.trim().toLowerCase(),
           _passwordController.text.trim(),
         );
 
         if (user == null) {
-          // Jika user tidak ditemukan, tampilkan pesan error.
-          setState(() {
-            _errorMessage = 'Invalid email or password.';
-          });
+          setState(() => _errorMessage = 'Invalid email or password.');
         } else {
-          // Jika berhasil, panggil `setAuthentication` dari MyApp untuk mengubah state global.
           MyApp.of(context).setAuthentication(true, user: user);
         }
       }
     } catch (e) {
-      // Tangani error, misalnya jika email sudah terdaftar.
-      setState(() {
-        _errorMessage = 'An error occurred: ${e.toString()}';
-      });
+      setState(() => _errorMessage = 'An error occurred: ${e.toString()}');
     }
 
-    // Hentikan loading setelah proses selesai.
-    setState(() {
-      _isLoading = false;
-    });
+    setState(() => _isLoading = false);
   }
 
-  /// Fungsi untuk beralih antara mode Login dan Register.
   void _switchAuthMode() {
     setState(() {
       _mode = _mode == AuthMode.login ? AuthMode.register : AuthMode.login;
-      _errorMessage = null; // Hapus pesan error saat berganti mode.
-      _formKey.currentState?.reset(); // Reset form.
+      _errorMessage = null;
+      _formKey.currentState?.reset();
     });
   }
 
@@ -118,36 +85,46 @@ class _AuthPageState extends State<AuthPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isLogin = _mode == AuthMode.login;
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(_mode == AuthMode.login ? 'Login' : 'Register'),
+        title: Text(isLogin ? 'Login' : 'Register'),
         centerTitle: true,
       ),
-      // Gunakan SingleChildScrollView untuk menghindari overflow saat keyboard muncul.
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
           child: Card(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            elevation: 4,
             child: Padding(
-              padding: const EdgeInsets.all(24.0),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 32),
               child: Form(
                 key: _formKey,
                 child: Column(
-                  mainAxisSize: MainAxisSize.min, // Agar Card tidak memenuhi layar.
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Tampilkan field 'Name' hanya pada mode Register.
-                    if (_mode == AuthMode.register)
+                    Icon(
+                      isLogin ? Icons.account_circle : Icons.person_add,
+                      size: 48,
+                      color: colorScheme.primary,
+                    ),
+                    const SizedBox(height: 16),
+
+                    if (!isLogin)
                       TextFormField(
                         controller: _nameController,
                         decoration: const InputDecoration(
                           labelText: 'Name',
                           prefixIcon: Icon(Icons.person),
                         ),
-                        validator: (value) =>
-                        value!.isEmpty ? 'Please enter your name' : null,
+                        validator: (value) => value!.isEmpty ? 'Please enter your name' : null,
                       ),
-                    const SizedBox(height: 16),
+
+                    if (!isLogin) const SizedBox(height: 16),
+
                     TextFormField(
                       controller: _emailController,
                       decoration: const InputDecoration(
@@ -155,11 +132,11 @@ class _AuthPageState extends State<AuthPage> {
                         prefixIcon: Icon(Icons.email),
                       ),
                       keyboardType: TextInputType.emailAddress,
-                      validator: (value) => value != null && value.contains('@')
-                          ? null
-                          : 'Please enter a valid email',
+                      validator: (value) =>
+                      value != null && value.contains('@') ? null : 'Enter a valid email',
                     ),
                     const SizedBox(height: 16),
+
                     TextFormField(
                       controller: _passwordController,
                       decoration: const InputDecoration(
@@ -167,38 +144,47 @@ class _AuthPageState extends State<AuthPage> {
                         prefixIcon: Icon(Icons.lock),
                       ),
                       obscureText: true,
-                      validator: (value) => value != null && value.length >= 6
-                          ? null
-                          : 'Password must be at least 6 characters',
+                      validator: (value) =>
+                      value != null && value.length >= 6 ? null : 'Minimum 6 characters',
                     ),
                     const SizedBox(height: 24),
-                    // Tampilkan pesan error jika ada.
+
                     if (_errorMessage != null)
                       Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
+                        padding: const EdgeInsets.only(bottom: 12),
                         child: Text(
                           _errorMessage!,
-                          style: TextStyle(color: Theme.of(context).colorScheme.error),
+                          style: TextStyle(color: colorScheme.error),
                           textAlign: TextAlign.center,
                         ),
                       ),
-                    // Tampilkan tombol atau indikator loading.
-                    if (_isLoading)
-                      const Center(child: CircularProgressIndicator())
-                    else
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+
+                    _isLoading
+                        ? const CircularProgressIndicator()
+                        : ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+                        minimumSize: const Size.fromHeight(50),
+                        backgroundColor: colorScheme.primary,
+                        foregroundColor: colorScheme.onPrimary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        onPressed: _submit,
-                        child: Text(_mode == AuthMode.login ? 'Login' : 'Create Account'),
                       ),
+                      onPressed: _submit,
+                      child: Text(
+                        isLogin ? 'Login' : 'Create Account',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
                     TextButton(
                       onPressed: _switchAuthMode,
-                      child: Text(_mode == AuthMode.login
-                          ? 'Don\'t have an account? Register'
-                          : 'Already have an account? Login'),
+                      child: Text(
+                        isLogin ? 'Don\'t have an account? Register' : 'Already have an account? Login',
+                        style: const TextStyle(fontSize: 14),
+                      ),
                     ),
                   ],
                 ),

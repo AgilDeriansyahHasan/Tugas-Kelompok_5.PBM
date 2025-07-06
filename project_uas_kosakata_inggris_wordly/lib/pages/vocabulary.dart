@@ -3,6 +3,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:flip_card/flip_card.dart';
 import '../database/database_helper.dart';
 import '../models/user.dart';
 import '../models/word.dart';
@@ -39,10 +40,12 @@ class _VocabularyPageState extends State<VocabularyPage> {
   /// Memuat daftar kata yang telah disimpan oleh pengguna dari database.
   Future<void> _loadSavedWords() async {
     setState(() => _isDbLoading = true);
-    final words = await DatabaseHelper.instance.getWords(widget.currentUser.userId);
+    final words = await DatabaseHelper.instance.getWords(
+        widget.currentUser.userId);
     setState(() {
       _savedWords = words;
-      _filteredSavedWords = words; // Awalnya, daftar yang difilter sama dengan daftar penuh.
+      _filteredSavedWords =
+          words; // Awalnya, daftar yang difilter sama dengan daftar penuh.
       _isDbLoading = false;
     });
   }
@@ -67,7 +70,8 @@ class _VocabularyPageState extends State<VocabularyPage> {
       _apiEntries.clear();
     });
 
-    final url = Uri.parse('https://api.dictionaryapi.dev/api/v2/entries/en/$word');
+    final url = Uri.parse(
+        'https://api.dictionaryapi.dev/api/v2/entries/en/$word');
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {
@@ -111,60 +115,73 @@ class _VocabularyPageState extends State<VocabularyPage> {
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Word Details'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(controller: nameController, decoration: const InputDecoration(labelText: 'Word')),
-              const SizedBox(height: 8),
-              TextField(controller: descController, decoration: const InputDecoration(labelText: 'Description'), maxLines: 3),
-              const SizedBox(height: 8),
-              TextField(controller: exampleController, decoration: const InputDecoration(labelText: 'Example'), maxLines: 2),
+      builder: (ctx) =>
+          AlertDialog(
+            title: const Text('Word Details'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(controller: nameController,
+                      decoration: const InputDecoration(labelText: 'Word')),
+                  const SizedBox(height: 8),
+                  TextField(controller: descController,
+                      decoration: const InputDecoration(
+                          labelText: 'Description'),
+                      maxLines: 3),
+                  const SizedBox(height: 8),
+                  TextField(controller: exampleController,
+                      decoration: const InputDecoration(labelText: 'Example'),
+                      maxLines: 2),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () async {
+                  // Tampilkan dialog konfirmasi sebelum menghapus.
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (confirmCtx) =>
+                        AlertDialog(
+                          title: const Text('Confirm Delete'),
+                          content: Text('Are you sure you want to delete "${word
+                              .name}"?'),
+                          actions: [
+                            TextButton(onPressed: () =>
+                                Navigator.pop(confirmCtx, false),
+                                child: const Text('Cancel')),
+                            TextButton(
+                              onPressed: () => Navigator.pop(confirmCtx, true),
+                              child: const Text('Delete', style: TextStyle(
+                                  color: Colors.red)),
+                            ),
+                          ],
+                        ),
+                  );
+
+                  if (confirm == true) {
+                    await DatabaseHelper.instance.deleteWord(word.id!);
+                    Navigator.pop(ctx); // Tutup dialog detail
+                    _loadSavedWords(); // Muat ulang
+                  }
+                },
+                child: const Text(
+                    'Delete', style: TextStyle(color: Colors.red)),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  word.name = nameController.text;
+                  word.description = descController.text;
+                  word.example = exampleController.text;
+                  await DatabaseHelper.instance.updateWord(word);
+                  Navigator.pop(ctx);
+                  _loadSavedWords();
+                },
+                child: const Text('Save Changes'),
+              ),
             ],
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () async {
-              // Tampilkan dialog konfirmasi sebelum menghapus.
-              final confirm = await showDialog<bool>(
-                context: context,
-                builder: (confirmCtx) => AlertDialog(
-                  title: const Text('Confirm Delete'),
-                  content: Text('Are you sure you want to delete "${word.name}"?'),
-                  actions: [
-                    TextButton(onPressed: () => Navigator.pop(confirmCtx, false), child: const Text('Cancel')),
-                    TextButton(
-                      onPressed: () => Navigator.pop(confirmCtx, true),
-                      child: const Text('Delete', style: TextStyle(color: Colors.red)),
-                    ),
-                  ],
-                ),
-              );
-
-              if (confirm == true) {
-                await DatabaseHelper.instance.deleteWord(word.id!);
-                Navigator.pop(ctx); // Tutup dialog detail
-                _loadSavedWords(); // Muat ulang
-              }
-            },
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              word.name = nameController.text;
-              word.description = descController.text;
-              word.example = exampleController.text;
-              await DatabaseHelper.instance.updateWord(word);
-              Navigator.pop(ctx);
-              _loadSavedWords();
-            },
-            child: const Text('Save Changes'),
-          ),
-        ],
-      ),
     );
   }
 
@@ -178,42 +195,55 @@ class _VocabularyPageState extends State<VocabularyPage> {
   Widget build(BuildContext context) {
     return DefaultTabController(
       length: 2,
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Search online or in your list...',
-                prefixIcon: const Icon(Icons.search),
-                border: const OutlineInputBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(30.0)),
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Vocabulary'),
+          centerTitle: true,
+          backgroundColor: Theme.of(context).colorScheme.primary,
+          foregroundColor: Theme.of(context).colorScheme.onPrimary,
+          elevation: 4,
+        ),
+        body: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: 'Search online or in your list...',
+                  prefixIcon: const Icon(Icons.search),
+                  border: const OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(30.0)),
+                  ),
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.travel_explore),
+                    tooltip: 'Search Online',
+                    onPressed: () =>
+                        _fetchWordFromApi(_searchController.text.trim()),
+                  ),
                 ),
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.travel_explore),
-                  tooltip: 'Search Online',
-                  onPressed: () => _fetchWordFromApi(_searchController.text.trim()),
-                ),
+                onSubmitted: _fetchWordFromApi,
               ),
-              onSubmitted: _fetchWordFromApi,
             ),
-          ),
-          const TabBar(
-            tabs: [
-              Tab(text: 'Search Results'),
-              Tab(text: 'My Saved Words'),
-            ],
-          ),
-          Expanded(
-            child: TabBarView(
-              children: [
-                _buildApiResultView(),
-                _buildSavedWordsView(),
+            TabBar(
+              labelColor: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.white
+                  : Colors.black,
+              tabs: const [
+                Tab(text: 'Search Results'),
+                Tab(text: 'My Saved Words'),
               ],
             ),
-          ),
-        ],
+            Expanded(
+              child: TabBarView(
+                children: [
+                  _buildApiResultView(),
+                  _buildSavedWordsView(),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -224,10 +254,12 @@ class _VocabularyPageState extends State<VocabularyPage> {
       return const Center(child: CircularProgressIndicator());
     }
     if (_apiError != null) {
-      return Center(child: Text(_apiError!, textAlign: TextAlign.center, style: const TextStyle(color: Colors.red)));
+      return Center(child: Text(_apiError!, textAlign: TextAlign.center,
+          style: const TextStyle(color: Colors.red)));
     }
     if (_apiEntries.isEmpty) {
-      return const Center(child: Text('Search for a word to see results here.'));
+      return const Center(
+          child: Text('Search for a word to see results here.'));
     }
     return ListView.builder(
       itemCount: _apiEntries.length,
@@ -242,9 +274,11 @@ class _VocabularyPageState extends State<VocabularyPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(entry.word, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                Text(entry.word, style: const TextStyle(
+                    fontSize: 20, fontWeight: FontWeight.bold)),
                 if (meaning != null)
-                  Text(meaning.partOfSpeech, style: const TextStyle(fontStyle: FontStyle.italic)),
+                  Text(meaning.partOfSpeech,
+                      style: const TextStyle(fontStyle: FontStyle.italic)),
                 const SizedBox(height: 8),
                 Text('Definition: ${definition?.definition ?? 'N/A'}'),
                 const SizedBox(height: 4),
@@ -252,7 +286,8 @@ class _VocabularyPageState extends State<VocabularyPage> {
                 Align(
                   alignment: Alignment.centerRight,
                   child: IconButton(
-                    icon: const Icon(Icons.add_circle_outline, color: Colors.green),
+                    icon: const Icon(
+                        Icons.add_circle_outline, color: Colors.green),
                     tooltip: 'Save Word',
                     onPressed: () => _saveApiEntry(entry),
                   ),
@@ -265,7 +300,7 @@ class _VocabularyPageState extends State<VocabularyPage> {
     );
   }
 
-  /// Widget untuk menampilkan daftar kata yang disimpan.
+  /// Widget untuk menampilkan daftar kata yang disimpan dalam bentuk card responsif.
   Widget _buildSavedWordsView() {
     if (_isDbLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -279,22 +314,85 @@ class _VocabularyPageState extends State<VocabularyPage> {
         ),
       );
     }
-    return ListView.builder(
-      itemCount: _filteredSavedWords.length,
-      itemBuilder: (ctx, i) {
-        final word = _filteredSavedWords[i];
-        return ListTile(
-          title: Text(word.name),
-          subtitle: Text(word.description, maxLines: 1, overflow: TextOverflow.ellipsis),
-          onTap: () => _showWordDetailDialog(word),
-          trailing: const Icon(Icons.chevron_right),
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Responsif: 1 kolom (hp), 2 kolom (tablet), 3 kolom (desktop)
+        int crossAxisCount = 1;
+        if (constraints.maxWidth > 900) {
+          crossAxisCount = 3;
+        } else if (constraints.maxWidth > 600) {
+          crossAxisCount = 2;
+        }
+
+        return GridView.builder(
+          padding: const EdgeInsets.all(16),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+            mainAxisExtent: 200,
+            // tidak pakai mainAxisExtent, biar tinggi card ngikutin isi
+          ),
+          itemCount: _filteredSavedWords.length,
+          itemBuilder: (ctx, i) {
+            final word = _filteredSavedWords[i];
+
+            return FlipCard(
+              direction: FlipDirection.HORIZONTAL,
+              front: Card(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                elevation: 4,
+                color: Theme.of(context).colorScheme.surfaceVariant,
+                child: Center(
+                  child: Text(
+                    word.name,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+              back: Card(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                elevation: 4,
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Definition:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      Text(word.description, maxLines: 3, overflow: TextOverflow.ellipsis),
+                      const SizedBox(height: 8),
+                      const Text('Example:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      Text(word.example, maxLines: 2),
+                      const Spacer(),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.edit, color: Colors.blue),
+                            onPressed: () => _showWordDetailDialog(word),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete, color: Colors.red),
+                            onPressed: () async {
+                              await DatabaseHelper.instance.deleteWord(word.id!);
+                              _loadSavedWords();
+                            },
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
         );
       },
     );
   }
 }
-
-
 // --- Model-model untuk parsing data dari Dictionary API ---
 
 class ApiWordEntry {

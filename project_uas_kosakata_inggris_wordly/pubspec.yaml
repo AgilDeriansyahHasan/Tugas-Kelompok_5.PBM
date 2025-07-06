@@ -20,6 +20,8 @@ dependencies:
   sqflite_common_ffi: ^2.3.6
   sqflite_common_ffi_web: ^1.0.0
   image_picker: ^1.1.2
+  confetti: ^0.8.0
+  flip_card: ^0.7.0
 
 dev_dependencies:
   flutter_test:

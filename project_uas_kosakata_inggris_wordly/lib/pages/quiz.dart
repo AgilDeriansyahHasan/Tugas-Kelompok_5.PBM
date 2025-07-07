@@ -56,12 +56,12 @@ class _QuizPageState extends State<QuizPage> {
     List<QuizWord> loadedWords = [];
 
     try {
-      while (loadedWords.length < 1) {
+      while (loadedWords.length < 5) {
         final response = await http.get(Uri.parse('https://random-word-api.herokuapp.com/word?number=10'));
         if (response.statusCode == 200) {
           final List randomWords = json.decode(response.body);
           for (String word in randomWords) {
-            if (loadedWords.length >= 1) break;
+            if (loadedWords.length >= 5) break;
             try {
               final url = Uri.parse('https://api.dictionaryapi.dev/api/v2/entries/en/$word');
               final detailResponse = await http.get(url);

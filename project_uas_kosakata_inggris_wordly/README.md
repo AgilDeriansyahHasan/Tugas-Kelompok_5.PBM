@@ -328,7 +328,7 @@ Tentu! Berikut adalah contoh template **README** untuk menampilkan **video YouTu
 ## 🎥 **Demo Video — *Wordly* Vocabulary App**
 
 🔗 **Tonton di YouTube** <br>
-[![Wordly Demo Video](https://img.youtube.com/vi/`VIDEO_ID`/0.jpg)](https://www.youtube.com/watch?v=`VIDEO_ID`)
+[![Wordly Demo Video](https://youtu.be/LY9Bpb-Ydrg)
 
 
 Klik gambar di atas atau kunjungi tautan berikut untuk menonton langsung di YouTube:

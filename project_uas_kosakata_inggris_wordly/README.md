@@ -332,7 +332,7 @@ Tentu! Berikut adalah contoh template **README** untuk menampilkan **video YouTu
 
 
 Klik gambar di atas atau kunjungi tautan berikut untuk menonton langsung di YouTube:
-👉 [https://www.youtube.com/watch?v=`VIDEO_ID`](https://www.youtube.com/watch?v=`VIDEO_ID`)
+👉 [https://www.youtube.com/watch?v=`VIDEO_ID`](https://youtu.be/LY9Bpb-Ydrg)
 
 ---
 ## 🚀 Cara Menjalankan Aplikasi
